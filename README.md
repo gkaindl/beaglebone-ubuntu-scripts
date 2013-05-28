@@ -14,7 +14,7 @@ This script downloads, patches and prepares the kernel sources for BeagleBone (B
 
 Note that this will only work for those kernels for which rcn-ee has a kernel-headers package as well – This should be the case for most older and some newer kernels, but there was a time where the kernel-headers package was missing from the distributions. The script will notify you if you want to run it for a kernel for which no kernel-headers package is available.
 
-By default, the script will prepare the sources for the currently running kernel. However, you can also specify a different kernel version as the first script argument, e.g. `./bb-get-rcn-kernel-source.sh `
+By default, the script will prepare the sources for the currently running kernel. However, you can also specify a different kernel version as the first script argument, e.g. `./bb-get-rcn-kernel-source.sh 3.8.13-bone19`
 
 Also, please edit the DIST variable at the top of the script to match the distribution you are running.
 
