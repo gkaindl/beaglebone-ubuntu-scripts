@@ -74,6 +74,20 @@ enable_spi () {
    fi
 }
 
+find_free_phandle () {
+   TREE="$1"
+   PHANDLE=
+   
+   for i in $(seq 1 255); do
+      p=$(printf "0x%x" $i)
+      has_phandle=$(grep "phandle = <$p>;" "${TREE}")
+      if [ -z "${has_phandle}" ]; then
+         echo "$p"
+         break
+      fi
+   done;
+}
+
 enable_spi_dev () {
    SPIDEVSTATUS=$(fdtget "${FDTBASE}/${FDT}" "${FDT_SPI_PATH}/spidev@0" reg 2>&1)
    
@@ -86,9 +100,16 @@ enable_spi_dev () {
       
       dtc -I dtb -O dts -o "${FDTTEMP}" "${FDTBASE}/${FDT}"
       
-      cat "${FDTTEMP}" | perl -ne "if (\$f>0 && /\};\$/) { print \"\n};\npinmux_spi1_pins \{\npinctrl-single,pins = <0x190 0x13 0x194 0x33 0x198 0x13 0x19c 0x13 0x164 0x12>;\nlinux,phandle = <0x12>;\nphandle = <0x12>;\n};\n\n\"; \$f=0; } else { print; } \$f=1 if (/pinmux_userled_pins {/)" > "${DTSTEMP}"
-      cat "${DTSTEMP}" | perl -ne "if (\$f>0 && /\};\$/) { print \"\npinctrl-0 = <0x12>;\nspidev: spidev\@0 \{\ncompatible = \\\"linux,spidev\\\";\nreg = <0>;\nspi-max-frequency = <24000000>;\n};\n};\n\n\"; \$f=0; } else { print; } \$f=1 if (/${FDT_SPI_DEV} {/)" > "${DTSTEMP2}"
+      PHANDLE=$(find_free_phandle "${FDTTEMP}")
+
+      if [ -z "${PHANDLE}" ]; then
+         rm -f rm -f "${FDTTEMP}"
+         fail "failed to find a phandle for the pinmux settings."
+      fi
       
+      cat "${FDTTEMP}" | perl -ne "if (\$f>0 && /\};\$/) { print \"\n};\npinmux_spi1_pins \{\npinctrl-single,pins = <0x190 0x13 0x194 0x33 0x198 0x13 0x19c 0x13 0x164 0x12>;\nlinux,phandle = <${PHANDLE}>;\nphandle = <${PHANDLE}>;\n};\n\n\"; \$f=0; } else { print; } \$f=1 if (/pinmux_userled_pins {/)" > "${DTSTEMP}"
+      cat "${DTSTEMP}" | perl -ne "if (\$f>0 && /\};\$/) { print \"\npinctrl-0 = <${PHANDLE}>;\nspidev: spidev\@0 \{\ncompatible = \\\"linux,spidev\\\";\nreg = <0>;\nspi-max-frequency = <24000000>;\n};\n};\n\n\"; \$f=0; } else { print; } \$f=1 if (/$(echo "${FDT_SPI_DEV}" | sed -nE "s/@/\\\@/p") {/)" > "${DTSTEMP2}"
+            
       dtc -I dts -O dtb -o "${FDTBASE}/${FDT}" ${DTSTEMP2}
       
       rm -f "${FDTTEMP}"
