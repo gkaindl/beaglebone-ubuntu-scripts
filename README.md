@@ -1,4 +1,5 @@
-# Beaglebone Ubuntu Scripts
+Beaglebone Ubuntu Scripts
+=========================
 
 A collection of scripts that are probably useful if you are playing with Ubuntu on a Beaglebone (Black). I use these not only to automate tasks, but also as a knowledge repository.
 
