@@ -16,28 +16,19 @@
 # kernel. However, you can also specify a different kernel version as the
 # first script argument.
 #
-# Also, please edit the DIST variable at the top of the script to match
-# the distribution you are running.
-#
 # Oh, and also ensure that you have all the necessary dependencies installed,
 # since the script doesn't check: gcc, make and all the usual suspects for
 # building kernel-related things. 
+#
+# The script tries to determine your linux distribution automatically, but
+# if that fails or you want to manually specify one, edit the DIST variable
+# at the top of the script.
 #
 # I've only tested this on Ubuntu, but it should probably also work with
 # Debian.
 #
 
-#lsb_release: is not installed by default when using debian's debootstrap script.
-has_lsb_release=$(which lsb_release 2>/dev/null)
-if [ "${has_lsb_release}" ] ; then
-	release=$(lsb_release -cs)
-	dpkg_arch=$(dpkg --print-architecture)
-	DIST="${release}-${dpkg_arch}"
-fi
-
-if [ ! "${DIST}" ] ; then
-	DIST="raring-armhf"
-fi
+DIST=""
 
 BASE_URL="http://rcn-ee.net/deb"
 OFFICIAL_KERNEL_BASE_URL="https://www.kernel.org/pub/linux/kernel"
@@ -46,18 +37,17 @@ KVER=$(uname -r)
 MAIN_KVER=$(echo ${KVER} | sed -nE 's/^(([0-9]+\.?)+).*/\1/gp')
 
 DDIR=$(mktemp -d)
-RURL="${BASE_URL}/${DIST}/v${KVER}"
 
 clean_up () {
 	rm -rf "${DDIR}"
 }
 
 notif () {
-	echo "\033[1;34m${1}\033[0m"
+	echo "\033[1;34m${1}\033[0m${2}"
 }
 
 fail () {
-	echo "\033[1;31m${1}\033[0m"
+	echo "\033[1;31m${1}\033[0m${2}"
 	clean_up
 	exit 0
 }
@@ -71,6 +61,26 @@ checks () {
 	if ! [ $(id -u) = 0 ]; then
 	   fail "You need to be root to run this (or use sudo)."
 	fi
+}
+
+determine_dist () {
+	#lsb_release: is not installed by default when using debian's debootstrap script.
+	if [ -z "${DIST}" ]; then
+		has_lsb_release=$(which lsb_release 2>/dev/null)
+		if [ "${has_lsb_release}" ] ; then
+			release=$(lsb_release -cs)
+			dpkg_arch=$(dpkg --print-architecture)
+			DIST="${release}-${dpkg_arch}"
+		fi
+	fi
+	
+	if [ -z "${DIST}" ]; then
+		fail "failed to determine linux distro: either install lsb-release (apt-get install lsb-release) or specify distribution manually at the top of this script, as \$DIST."
+	fi
+	
+	RURL="${BASE_URL}/${DIST}/v${KVER}"
+	
+	notif "using linux distribution: " "${DIST}"
 }
 
 get_rcn_kernel_header_package () {
@@ -181,6 +191,7 @@ notif "installing kernel sources for ${KVER}..."
 notif
 
 checks
+determine_dist
 get_rcn_kernel_header_package
 unpack_rcn_kernel_header_package
 get_official_kernel_source
