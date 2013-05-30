@@ -27,8 +27,17 @@
 # Debian.
 #
 
-DIST="raring-armhf"
+#lsb_release: is not installed by default when using debian's debootstrap script.
+has_lsb_release=$(which lsb_release 2>/dev/null)
+if [ "${has_lsb_release}" ] ; then
+	release=$(lsb_release -cs)
+	dpkg_arch=$(dpkg --print-architecture)
+	DIST="${release}-${dpkg_arch}"
+fi
 
+if [ ! "${DIST}" ] ; then
+	DIST="raring-armhf"
+fi
 
 BASE_URL="http://rcn-ee.net/deb"
 OFFICIAL_KERNEL_BASE_URL="https://www.kernel.org/pub/linux/kernel"
