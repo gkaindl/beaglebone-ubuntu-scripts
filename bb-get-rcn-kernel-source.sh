@@ -34,7 +34,7 @@ BASE_URL="http://rcn-ee.net/deb"
 OFFICIAL_KERNEL_BASE_URL="https://www.kernel.org/pub/linux/kernel"
 
 KVER=$(uname -r)
-MAIN_KVER=$(echo ${KVER} | sed -nE 's/^(([0-9]+\.?)+).*/\1/gp')
+MAIN_KVER=$(echo ${KVER} | sed -nE 's/^(([0-9]+\.?)+).*/\1/gp' | sed 's/.0//g')
 
 DDIR=$(mktemp -d)
 
