@@ -125,9 +125,9 @@ unpack_rcn_kernel_header_package () {
 
 get_official_kernel_source () {	
 	if [ -n "$(echo ${MAIN_KVER} | sed -nE 's/(3\.)+.*/\1/p')" ]; then
-		MAIN_KERNEL_URL="${OFFICIAL_KERNEL_BASE_URL}/v3.x/linux-${MAIN_KVER}.tar.bz2"
+		MAIN_KERNEL_URL="${OFFICIAL_KERNEL_BASE_URL}/v3.x/linux-${MAIN_KVER}.tar.xz"
 	else
-		MAIN_KERNEL_URL="${OFFICIAL_KERNEL_BASE_URL}/v$(echo ${MAIN_KVER} | sed -nE 's/([0-9]+\.[0-9]+).*/\1/p')/linux-${MAIN_KVER}.tar.bz2"
+		MAIN_KERNEL_URL="${OFFICIAL_KERNEL_BASE_URL}/v$(echo ${MAIN_KVER} | sed -nE 's/([0-9]+\.[0-9]+).*/\1/p')/linux-${MAIN_KVER}.tar.xz"
 	fi
 
 	notif "getting official kernel source from ${MAIN_KERNEL_URL}..."
@@ -137,7 +137,7 @@ get_official_kernel_source () {
 	notif "unpacking official kernel source..."
 	sleep 1
 
-	tar xvfj "${DDIR}/linux-${MAIN_KVER}.tar.bz2" --directory "${DDIR}"
+	tar xvfJ "${DDIR}/linux-${MAIN_KVER}.tar.xz" --directory "${DDIR}"
 }
 
 patch_kernel_source () {
