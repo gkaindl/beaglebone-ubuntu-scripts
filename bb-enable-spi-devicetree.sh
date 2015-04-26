@@ -11,8 +11,8 @@
 
 FDT_SPI_DEV="spi@481a0000"
 
-UBOOTBASE="/boot/uboot"
-FDTBASE="${UBOOTBASE}/dtbs"
+UBOOTBASE="/boot"
+FDTBASE="${UBOOTBASE}/dtbs/$(uname -r)"
 FDT_SPI_PATH="/ocp/${FDT_SPI_DEV}"
 
 REBOOT_REQUIRED=""
@@ -38,11 +38,17 @@ checks () {
 }
 
 find_devicetree_file () {
-   FDT=$(strings "${UBOOTBASE}/u-boot.img" 2>/dev/null | grep fdtfile= | sed -nE 's/fdtfile=(.*)$/\1/p')
-   
-   if [ -z ${FDT} ]; then
-      fail "failed to extract flattened device-tree file from " "${UBOOTBASE}/u-boot.img"
+	board_type="$(hexdump -e '8/1 "%c"' "/sys/bus/i2c/devices/0-0050/eeprom" -s 4 -n 8 2>&1)"
+	   
+   if [ -z ${board_type} ]; then
+      fail "failed to extract board type from eeprom."
    fi
+	
+	case $board_type in
+		"A335BONE") FDT="am335x-bone.dtb"; notif "detected BeagleBone";;
+		"A335BNLT") FDT="am335x-boneblack.dtb"; notif "detected BeagleBone Black";;
+		*) fail "failed to detect board type: unknown board \"$board_type\"";;
+	esac
    
    if [ ! -f "${FDTBASE}/${FDT}" ]; then
       fail "flattened device-tree file cannot be found at " "${FDTBASE}/${FDT}"
@@ -78,7 +84,7 @@ find_free_phandle () {
    TREE="$1"
    PHANDLE=
    
-   for i in $(seq 1 255); do
+   for i in $(seq 1 65535); do
       p=$(printf "0x%x" $i)
       has_phandle=$(grep "phandle = <$p>;" "${TREE}")
       if [ -z "${has_phandle}" ]; then
