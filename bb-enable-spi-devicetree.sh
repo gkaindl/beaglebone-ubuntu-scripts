@@ -38,8 +38,22 @@ checks () {
 }
 
 find_devicetree_file () {
-	board_type="$(hexdump -e '8/1 "%c"' "/sys/bus/i2c/devices/0-0050/eeprom" -s 4 -n 8 2>&1)"
-	   
+   EEPROM="/sys/bus/i2c/devices/1-0050/eeprom"
+
+   if [ ! -f "${EEPROM}" ]; then
+      EEPROM="/sys/bus/i2c/devices/0-0050/eeprom"
+   fi
+
+   if [ ! -f "${EEPROM}" ]; then
+      EEPROM="/sys/bus/i2c/devices/0-0050/at24-0/nvmem"
+   fi
+
+   if [ ! -f "${EEPROM}" ]; then
+      fail "i2c eeprom file not found in sysfs."
+   fi
+
+   board_type="$(hexdump -e '8/1 "%c"' "$EEPROM" -s 4 -n 8 2>&1)"
+
    if [ -z ${board_type} ]; then
       fail "failed to extract board type from eeprom."
    fi
@@ -113,14 +127,14 @@ enable_spi_dev () {
          fail "failed to find a phandle for the pinmux settings."
       fi
       
-      cat "${FDTTEMP}" | perl -ne "if (\$f>0 && /\};\$/) { print \"\n};\npinmux_spi1_pins \{\npinctrl-single,pins = <0x190 0x13 0x194 0x33 0x198 0x13 0x19c 0x13 0x164 0x12>;\nlinux,phandle = <${PHANDLE}>;\nphandle = <${PHANDLE}>;\n};\n\n\"; \$f=0; } else { print; } \$f=1 if (/pinmux_userled_pins {/)" > "${DTSTEMP}"
-      cat "${DTSTEMP}" | perl -ne "if (\$f>0 && /\};\$/) { print \"\npinctrl-0 = <${PHANDLE}>;\nspidev: spidev\@0 \{\ncompatible = \\\"linux,spidev\\\";\nreg = <0>;\nspi-max-frequency = <24000000>;\n};\n};\n\n\"; \$f=0; } else { print; } \$f=1 if (/$(echo "${FDT_SPI_DEV}" | sed -nE "s/@/\\\@/p") {/)" > "${DTSTEMP2}"
+      cat "${FDTTEMP}" | perl -ne "if (\$f>0 && /\};\$/) { print \"\n};\npinmux_spi1_pins \{\npinctrl-single,pins = <0x190 0x13 0x194 0x33 0x198 0x13 0x19c 0x13 0x164 0x12>;\nlinux,phandle = <${PHANDLE}>;\nphandle = <${PHANDLE}>;\n};\n\n\"; \$f=0; \$ff = 1;} else { print; } \$f=1 if (\$ff!=1 && /pinmux_userled_pins {/)" > "${DTSTEMP}"
+      cat "${DTSTEMP}" | perl -ne "if (\$f>0 && /\};\$/) { print \"\npinctrl-0 = <${PHANDLE}>;\nspidev: spidev\@0 \{\ncompatible = \\\"linux,spidev\\\";\nreg = <0>;\nspi-max-frequency = <24000000>;\n};\n};\n\n\"; \$f=0; \$ff=1;} else { print; } \$f=1 if (\$ff!=1 && /$(echo "${FDT_SPI_DEV}" | sed -nE "s/@/\\\@/p") {/)" > "${DTSTEMP2}"
             
       dtc -I dts -O dtb -o "${FDTBASE}/${FDT}" ${DTSTEMP2}
       
-      rm -f "${FDTTEMP}"
-      rm -f "${DTSTEMP}"
-      rm -f "${DTSTEMP2}"
+      #rm -f "${FDTTEMP}"
+      #rm -f "${DTSTEMP}"
+      #rm -f "${DTSTEMP2}"
       
       SPIDEVSTATUS=$(fdtget "${FDTBASE}/${FDT}" "${FDT_SPI_PATH}/spidev@0" reg 2>&1)
       

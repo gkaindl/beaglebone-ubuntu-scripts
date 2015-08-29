@@ -37,7 +37,11 @@ print_serial () {
    if [ ! -f "${EEPROM}" ]; then
       EEPROM="/sys/bus/i2c/devices/0-0050/eeprom"
    fi
-   
+  
+   if [ ! -f "${EEPROM}" ]; then
+      EEPROM="/sys/bus/i2c/devices/0-0050/at24-0/nvmem"
+   fi
+ 
    if [ ! -f "${EEPROM}" ]; then
       fail "i2c eeprom file not found in sysfs."
    fi
