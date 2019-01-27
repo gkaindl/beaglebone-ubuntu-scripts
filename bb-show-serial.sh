@@ -46,7 +46,7 @@ print_serial () {
       fail "i2c eeprom file not found in sysfs."
    fi
    
-   SERIAL=$(hexdump -e '8/1 "%c"' "${EEPROM}" -s 16 -n 12 2>&1)
+   SERIAL=$(hexdump -e '8/1 "%c"' "${EEPROM}" -s 12 -n 16 2>&1)
    
    if [ "${SERIAL}" = "${SERIAL#*BB}" ]; then
       fail "failed to extract serial number from i2c eeprom: " "${SERIAL}"
